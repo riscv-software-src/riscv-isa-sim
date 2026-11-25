@@ -342,9 +342,6 @@ void isa_parser_t::apply_zve_properties(const std::string& ext_str, const char* 
 
 void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
 {
-  if (ext_str == "v" || ext_str.starts_with("zve"))
-    vector_extension = true;
-
   if (const auto* info = find_extension_info(ext_str)) {
     if (!(info->xlens & max_xlen))
       bad_isa_string(str, ("'" + ext_str + "' is incompatible with XLEN=" + std::to_string(max_xlen)).c_str());
@@ -392,7 +389,6 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
 
   vlen = 0;
   elen = 0;
-  vector_extension = false;
   zvf = false;
   zvd = false;
 
@@ -439,6 +435,9 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
   }
 
   apply_extension_combinations(extension_table);
+  // Zvl sets a minimum VLEN but does not enable vector instructions.
+  if (elen == 0)
+    vlen = 0;
 
   if (extension_table[EXT_ZFBFMIN] || extension_table[EXT_ZFHMIN]) {
     extension_table[EXT_INTERNAL_ZFH_MOVE] = true;

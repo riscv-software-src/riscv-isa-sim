@@ -275,7 +275,7 @@ public:
     return !custom_extensions.empty();
   }
   bool any_vector_extensions() const {
-    return isa.has_any_vector();
+    return VU.VLEN > 0;
   }
   bool extension_enabled(unsigned char ext) const {
     return extension_enabled(isa_extension_t(ext));

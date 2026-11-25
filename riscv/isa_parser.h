@@ -169,7 +169,7 @@ public:
   bool extension_enabled(isa_extension_t ext) const {
     return extension_table[ext];
   }
-  bool has_any_vector() const { return vector_extension; }
+  bool has_any_vector() const { return vlen > 0; }
 
   std::bitset<NUM_ISA_EXTENSIONS> get_extension_table() const { return extension_table; }
 
@@ -182,7 +182,6 @@ protected:
   reg_t elen;
   bool zvf;
   bool zvd;
-  bool vector_extension;
   std::bitset<NUM_ISA_EXTENSIONS> extension_table;
   std::string isa_string;
   std::set<std::string> extensions;
