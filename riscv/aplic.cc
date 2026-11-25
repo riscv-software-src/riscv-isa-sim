@@ -42,6 +42,8 @@
 #define TARGET_EIID_MASK        0x7ff
 
 #define APLIC_MMIO_REG_SIZE     4
+// setip, in_clrip, setie and clrie: 32 registers of one bit per source
+#define APLIC_BITS_SIZE         (APLIC_MAX_DEVICES / 8)
 
 aplic_t::aplic_t(const simif_t *simif, aplic_t *parent, bool guest_index) : simif(simif),
   target_mask(TARGET_HART_MASK | (guest_index ? TARGET_GUEST_MASK : 0) | TARGET_EIID_MASK), parent(parent), child(nullptr), domaincfg((0x80 << 24) | DOMAINCFG_DM_MASK), sourcecfg(), mmsiaddrcfgh(MMSIADDRCFGH_L_MASK), ie(), target(), level(), genmsi(0)
@@ -180,15 +182,13 @@ bool aplic_t::load(reg_t addr, size_t len, uint8_t* bytes)
       val = sourcecfg[idx];
   } else if (addr == MMSIADDRCFGH) {
     val = mmsiaddrcfgh;
-  } else if (addr >= IN_CLRIP_BASE && addr < CLRIPNUM) {
+  } else if (addr >= IN_CLRIP_BASE && addr < IN_CLRIP_BASE + APLIC_BITS_SIZE) {
     auto idx = (addr - IN_CLRIP_BASE) / APLIC_MMIO_REG_SIZE;
     // rectified input: zero for an inactive source
-    if (idx < APLIC_MAX_DEVICES / 32)
-      val = level[idx] & active_mask(idx);
-  } else if (addr >= SETIE_BASE && addr < SETIENUM) {
+    val = level[idx] & active_mask(idx);
+  } else if (addr >= SETIE_BASE && addr < SETIE_BASE + APLIC_BITS_SIZE) {
     auto idx = (addr - SETIE_BASE) / APLIC_MMIO_REG_SIZE;
-    if (idx < APLIC_MAX_DEVICES / 32)
-      val = ie[idx] & active_mask(idx);
+    val = ie[idx] & active_mask(idx);
   } else if (addr == GENMSI) {
     val = genmsi;
   } else if (addr >= TARGET_BASE && addr < IDC) {
@@ -237,23 +237,21 @@ bool aplic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
       if (!was_active)
         ie[idx / 32] &= ~(1u << (idx % 32));
     }
-  } else if (addr >= SETIP_BASE && addr < SETIPNUM) {
+  } else if (addr >= SETIP_BASE && addr < SETIP_BASE + APLIC_BITS_SIZE) {
     auto idx = (addr - SETIP_BASE) / APLIC_MMIO_REG_SIZE;
     val &= active_mask(idx);
     update_interrupt_masked(idx, val);
   } else if (addr == SETIPNUM) {
     update_interrupt(val);
-  } else if (addr >= SETIE_BASE && addr < SETIENUM) {
+  } else if (addr >= SETIE_BASE && addr < SETIE_BASE + APLIC_BITS_SIZE) {
     auto idx = (addr - SETIE_BASE) / APLIC_MMIO_REG_SIZE;
-    if (idx < APLIC_MAX_DEVICES / 32)
-      ie[idx] |= val & active_mask(idx);
+    ie[idx] |= val & active_mask(idx);
   } else if (addr == SETIENUM) {
     if (active(val))
       ie[val / 32] |= 1 << (val % 32);
-  } else if (addr >= CLRIE_BASE && addr < CLRIENUM) {
+  } else if (addr >= CLRIE_BASE && addr < CLRIE_BASE + APLIC_BITS_SIZE) {
     auto idx = (addr - CLRIE_BASE) / APLIC_MMIO_REG_SIZE;
-    if (idx < APLIC_MAX_DEVICES / 32)
-      ie[idx] &= ~val;
+    ie[idx] &= ~val;
   } else if (addr == CLRIENUM) {
     if (active(val))
       ie[val / 32] &= ~(1 << (val % 32));
