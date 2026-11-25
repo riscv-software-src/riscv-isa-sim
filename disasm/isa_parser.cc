@@ -435,6 +435,9 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
   }
 
   apply_extension_combinations(extension_table);
+  // Zvl sets a minimum VLEN but does not enable vector instructions.
+  if (elen == 0)
+    vlen = 0;
 
   if (extension_table[EXT_ZFBFMIN] || extension_table[EXT_ZFHMIN]) {
     extension_table[EXT_INTERNAL_ZFH_MOVE] = true;
