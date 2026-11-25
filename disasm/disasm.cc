@@ -1670,8 +1670,10 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
     DEFINE_XLOAD_BASE(hlv_h)
     DEFINE_XLOAD_BASE(hlv_hu)
     DEFINE_XLOAD_BASE(hlv_w)
-    DEFINE_XLOAD_BASE(hlv_wu)
-    DEFINE_XLOAD_BASE(hlv_d)
+    if (xlen_eq(64)) {
+        DEFINE_XLOAD_BASE(hlv_wu)
+        DEFINE_XLOAD_BASE(hlv_d)
+    }
 
     DEFINE_XLOAD_BASE(hlvx_hu)
     DEFINE_XLOAD_BASE(hlvx_wu)
@@ -1679,7 +1681,9 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
     DEFINE_XSTORE_BASE(hsv_b)
     DEFINE_XSTORE_BASE(hsv_h)
     DEFINE_XSTORE_BASE(hsv_w)
-    DEFINE_XSTORE_BASE(hsv_d)
+    if (xlen_eq(64)) {
+        DEFINE_XSTORE_BASE(hsv_d)
+    }
 
     DEFINE_SFENCE_TYPE(hfence_gvma);
     DEFINE_SFENCE_TYPE(hfence_vvma);
