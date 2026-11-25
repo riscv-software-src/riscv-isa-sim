@@ -4,7 +4,6 @@
 #include "arith.h"
 #include "sim.h"
 #include "dts.h"
-#include <cassert>
 
 #define DOMAINCFG       0x0
 #define SOURCECFG_BASE  0x4
@@ -116,7 +115,10 @@ void aplic_t::send_msi(uint32_t proc_id, uint32_t guest, uint32_t eiid)
   auto &procs = simif->get_harts();
   auto it = procs.find(proc_id);
 
-  assert((eiid != 0) && (it != procs.end()));
+  // EIID 0 is legal but no IMSIC interrupt identity is 0, and Hart Index
+  // is WLRL, so software can send an MSI that reaches no interrupt file
+  if (eiid == 0 || it == procs.end())
+    return;
 
   processor_t *proc = it->second;
   if (!parent) {
