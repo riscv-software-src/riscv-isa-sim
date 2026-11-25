@@ -773,12 +773,16 @@ reg_t rv32_low_csr_t::read() const noexcept {
   return orig->read() & 0xffffffffU;
 }
 
+reg_t rv32_low_csr_t::read_for_write() const noexcept {
+  return orig->read_for_write() & 0xffffffffU;
+}
+
 void rv32_low_csr_t::verify_permissions(insn_t insn, bool write) const {
   orig->verify_permissions(insn, write);
 }
 
 bool rv32_low_csr_t::unlogged_write(const reg_t val) noexcept {
-  return orig->unlogged_write((orig->written_value() >> 32 << 32) | (val & 0xffffffffU));
+  return orig->unlogged_write((orig->read_for_write() >> 32 << 32) | (val & 0xffffffffU));
 }
 
 reg_t rv32_low_csr_t::written_value() const noexcept {
@@ -800,7 +804,7 @@ void rv32_high_csr_t::verify_permissions(insn_t insn, bool write) const {
 }
 
 bool rv32_high_csr_t::unlogged_write(const reg_t val) noexcept {
-  return orig->unlogged_write((orig->written_value() << 32 >> 32) | ((val & 0xffffffffU) << 32));
+  return orig->unlogged_write((orig->read_for_write() << 32 >> 32) | ((val & 0xffffffffU) << 32));
 }
 
 reg_t rv32_high_csr_t::written_value() const noexcept {
