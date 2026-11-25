@@ -1969,7 +1969,7 @@ void scountovf_csr_t::verify_permissions(insn_t insn, bool write) const {
   if (proc->extension_enabled('H') &&
      (proc->extension_enabled_const(EXT_SMCDELEG) || proc->extension_enabled(EXT_SSCCFG))
   ) {
-    if (state->v && (state->menvcfg->read() & MENVCFG_CDE)) {
+    if (state->v && (state->menvcfg->read() & MENVCFG_CDE) && !write) {
       throw trap_virtual_instruction(insn.bits());
     }
   }
