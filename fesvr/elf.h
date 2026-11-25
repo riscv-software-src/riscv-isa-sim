@@ -30,6 +30,7 @@
 #define PT_LOAD 1
 
 #define SHT_NOBITS 8
+#define SHT_NULL 0
 
 typedef struct {
   uint8_t  e_ident[16];

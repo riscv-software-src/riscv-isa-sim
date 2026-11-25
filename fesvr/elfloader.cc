@@ -81,6 +81,7 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
     char* shstrtab = buf + bswap(sh[bswap(eh->e_shstrndx)].sh_offset);         \
     unsigned strtabidx = 0, symtabidx = 0;                                     \
     for (unsigned i = 0; i < bswap(eh->e_shnum); i++) {                        \
+      if (bswap(sh[i].sh_type) == SHT_NULL) continue;                          \
       unsigned max_len =                                                       \
           bswap(sh[bswap(eh->e_shstrndx)].sh_size) - bswap(sh[i].sh_name);     \
       assert(bswap(sh[i].sh_name) < bswap(sh[bswap(eh->e_shstrndx)].sh_size)); \
