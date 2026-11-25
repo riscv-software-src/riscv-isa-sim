@@ -30,6 +30,7 @@
 #define SOURCECFG_D_MASK        0x400
 #define SOURCECFG_CHILD_MASK    0x3ff
 #define SOURCECFG_SM_MASK       0x7
+#define SOURCECFG_SM_LEVEL1     6
 
 #define MMSIADDRCFGH_L_MASK     0x80000000
 
@@ -220,11 +221,11 @@ bool aplic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
       else if (child)
         delegate(idx, val & SOURCECFG_D_MASK);
 
-      // keep only D and Child Index (D = 1) or SM (D = 0); force SM to be 6 if non-zero
+      // keep only D and Child Index (D = 1) or SM (D = 0); force SM to be Level1 if non-zero
       if (val & SOURCECFG_D_MASK)
         val &= SOURCECFG_D_MASK | SOURCECFG_CHILD_MASK;
       else if (val & SOURCECFG_SM_MASK)
-        val = 6;
+        val = SOURCECFG_SM_LEVEL1;
       else
         val = 0;
 
