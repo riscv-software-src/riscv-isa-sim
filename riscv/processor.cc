@@ -461,12 +461,16 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
       vsdeleg = hsdeleg = 0;
   }
   bool vti = false;
-  if (extension_enabled_const(EXT_SSAIA) && extension_enabled('H')) {
+  if (extension_enabled_const(EXT_SSAIA) && extension_enabled('H') && interrupt && curr_virt) {
     const reg_t hvictl = state.csrmap[CSR_HVICTL]->read();
     const reg_t iid = get_field(hvictl, HVICTL_IID);
-    // It is possible that hvictl is injecting VSEIP (10) and hvictl.DPR is causing mip.VSEIP to be picked over VTI.
-    // Check vstopi == hvictl.iid
-    vti = (hvictl & HVICTL_VTI) && iid != IRQ_S_EXT && iid == bit && get_field(state.vstopi->read(), MTOPI_IID) == iid;
+    const reg_t m_hs_pending = ((state.mip->read() & state.mie->read()) |
+                                (state.nonvirtual_sip->read() & state.nonvirtual_sie->read())) & ~state.hideleg->read();
+    // The interrupt is the one injected by hvictl only if take_interrupt selected it at VS level, i.e. nothing is
+    // pending at M or HS level (this test must match take_interrupt's levels), and if vstopi names it rather than
+    // a VSEI that hvictl.DPR or the priorities put ahead of it.
+    vti = (hvictl & HVICTL_VTI) && iid != IRQ_S_EXT && iid == bit && get_field(state.vstopi->read(), MTOPI_IID) == iid &&
+          !m_hs_pending;
   }
   if ((state.prv <= PRV_S && bit < max_xlen && ((vsdeleg >> bit) & 1)) || vti) {
     // Handle the trap in VS-mode
