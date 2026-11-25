@@ -58,10 +58,10 @@ const int NCSR = 4096;
 #define FSR_NXA  (FPEXC_NX << FSR_AEXC_SHIFT)
 #define FSR_AEXC (FSR_NVA | FSR_OFA | FSR_UFA | FSR_DZA | FSR_NXA)
 
-#define insn_length(x) \
-  (((x) & 0x03) < 0x03 ? 2 : \
+#define INSN_LENGTH(x, zca) \
+  ((zca) && ((x) & 0x03) < 0x03 ? 2 : \
    ((x) & 0x1f) < 0x1f ? 4 : \
-   ((x) & 0x3f) < 0x3f ? 6 : \
+   (zca) && ((insn_bits_t(x) >> 32) & 0x03) < 0x03 ? 6 : \
    8)
 #define MAX_INSN_LENGTH 8
 #define PC_ALIGN 2
@@ -75,7 +75,6 @@ public:
   insn_t() = default;
   insn_t(insn_bits_t bits) : b(bits) {}
   insn_bits_t bits() { return b; }
-  int length() { return insn_length(b); }
   [[maybe_unused]] int64_t opcode() { return x(0, 7); }
   [[maybe_unused]] int64_t funct7() { return x(25, 7); }
   [[maybe_unused]] int64_t funct3() { return x(12, 3); }
