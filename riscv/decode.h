@@ -61,7 +61,7 @@ const int NCSR = 4096;
 #define INSN_LENGTH(x, zca) \
   ((zca) && ((x) & 0x03) < 0x03 ? 2 : \
    ((x) & 0x1f) < 0x1f ? 4 : \
-   (zca) && ((x) & 0x3f) < 0x3f ? 6 : \
+   (zca) && ((insn_bits_t(x) >> 32) & 0x03) < 0x03 ? 6 : \
    8)
 #define MAX_INSN_LENGTH 8
 #define PC_ALIGN 2
