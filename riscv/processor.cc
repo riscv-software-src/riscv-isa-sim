@@ -443,8 +443,10 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   bool interrupt = (bit & interrupt_bit) != 0;
   bool supv_double_trap = false;
   if (interrupt) {
+    // An interrupt pending at M level traps to M-mode even if mvien/mvip also make it pending in sip
+    const reg_t m_pending = state.mip->read() & state.mie->read() & ~state.mideleg->read();
     vsdeleg = (curr_virt && state.prv <= PRV_S) ? state.hideleg->read() : 0;
-    hsdeleg = (state.prv <= PRV_S) ? (state.mideleg->read() | state.nonvirtual_sip->read()) : 0;
+    hsdeleg = (state.prv <= PRV_S) ? (state.mideleg->read() | (state.nonvirtual_sip->read() & ~m_pending)) : 0;
     bit &= ~((reg_t)1 << (max_xlen - 1));
   } else {
     vsdeleg = (curr_virt && state.prv <= PRV_S) ? (state.medeleg->read() & state.hedeleg->read()) : 0;
