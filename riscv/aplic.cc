@@ -30,6 +30,7 @@
 #define SOURCECFG_D_MASK        0x400
 #define SOURCECFG_CHILD_MASK    0x3ff
 #define SOURCECFG_SM_MASK       0x7
+#define SOURCECFG_SM_LEVEL1     6
 
 #define MMSIADDRCFGH_L_MASK     0x80000000
 
@@ -174,7 +175,8 @@ bool aplic_t::load(reg_t addr, size_t len, uint8_t* bytes)
     auto idx = (addr - SOURCECFG_BASE) / APLIC_MMIO_REG_SIZE + 1;
     if (accessible(idx))
       val = sourcecfg[idx];
-  } else if (addr == MMSIADDRCFGH) {
+  } else if (addr == MMSIADDRCFGH && !parent) {
+    // implemented only in the root domain
     val = mmsiaddrcfgh;
   } else if (addr >= IN_CLRIP_BASE && addr < CLRIPNUM) {
     auto idx = (addr - IN_CLRIP_BASE) / APLIC_MMIO_REG_SIZE;
@@ -219,9 +221,13 @@ bool aplic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
       else if (child)
         delegate(idx, val & SOURCECFG_D_MASK);
 
-      // force SM to be 6 if non-zero
-      if (val & SOURCECFG_SM_MASK)
-        val = set_field(val, SOURCECFG_SM_MASK, 6);
+      // keep only D and Child Index (D = 1) or SM (D = 0); force SM to be Level1 if non-zero
+      if (val & SOURCECFG_D_MASK)
+        val &= SOURCECFG_D_MASK | SOURCECFG_CHILD_MASK;
+      else if (val & SOURCECFG_SM_MASK)
+        val = SOURCECFG_SM_LEVEL1;
+      else
+        val = 0;
 
       sourcecfg[idx] = val;
     }
