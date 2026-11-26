@@ -27,7 +27,8 @@ void trigger_t::tdata2_write(processor_t UNUSED * const proc, const reg_t UNUSED
 
 action_t trigger_t::legalize_action(reg_t val, reg_t action_mask, reg_t dmode_mask) noexcept {
   reg_t act = get_field(val, action_mask);
-  return (act > ACTION_MAXVAL || (act == ACTION_DEBUG_MODE && get_field(val, dmode_mask) == 0)) ? ACTION_DEBUG_EXCEPTION : (action_t)act;
+  // There is no trace encoder, so the trace actions (2-4) are not supported.
+  return (act > ACTION_DEBUG_MODE || (act == ACTION_DEBUG_MODE && get_field(val, dmode_mask) == 0)) ? ACTION_DEBUG_EXCEPTION : (action_t)act;
 }
 
 unsigned trigger_t::legalize_mhselect(bool h_enabled) const noexcept {
@@ -140,7 +141,9 @@ bool trigger_t::textra_match(processor_t * const proc) const noexcept
   const auto mhselect_interp = interpret_mhselect(proc->extension_enabled('H'));
   const mhselect_mode_t mode = mhselect_interp.mode;
   if (mode == MHSELECT_MODE_MCONTEXT) { // 4, 1, and 5 are mcontext
-    reg_t mask = (1 << (CSR_TEXTRA_MHVALUE_LENGTH(xlen) + 1)) - 1;
+    // 1 and 5 compare {mhvalue, mhselect[2]}, 4 compares only mhvalue
+    const unsigned length = CSR_TEXTRA_MHVALUE_LENGTH(xlen) + (mhselect_interp.shift_mhvalue.value() ? 1 : 0);
+    reg_t mask = (1 << length) - 1;
     if ((state->mcontext->read() & mask) != mhselect_interp.compare_val(mhvalue))
       return false;
   } else if (mode == MHSELECT_MODE_VMID) { // 2 and 6 are vmid
@@ -267,9 +270,6 @@ std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(
   if (!match_address || !common_match(proc))
     return std::nullopt;
 
-  /* This is OK because this function is only called if the trigger was
-   * not inhibited by the previous trigger in the chain. */
-  set_hit(timing ? HIT_IMMEDIATELY_AFTER : HIT_BEFORE);
   return match_result_t(timing_t(timing), action, *match_address);
 }
 
@@ -552,9 +552,6 @@ bool module_t::tdata1_write(unsigned index, const reg_t val) noexcept
 
   reg_t tdata1 = val;
 
-  // hardware must zero chain in writes that set dmode to 0 if the next trigger has dmode of 1
-  const bool allow_chain = !(index+1 < triggers.size() && triggers[index+1]->get_dmode() && !get_field(val, CSR_TDATA1_DMODE(xlen)));
-
   // dmode only writable from debug mode
   if (!proc->get_state()->debug_mode) {
     assert(CSR_TDATA1_DMODE(xlen) == CSR_MCONTROL_DMODE(xlen));
@@ -562,6 +559,9 @@ bool module_t::tdata1_write(unsigned index, const reg_t val) noexcept
     assert(CSR_TDATA1_DMODE(xlen) == CSR_ETRIGGER_DMODE(xlen));
     tdata1 = set_field(tdata1, CSR_TDATA1_DMODE(xlen), 0);
   }
+
+  // hardware must zero chain in writes that set dmode to 0 if the next trigger has dmode of 1
+  const bool allow_chain = !(index+1 < triggers.size() && triggers[index+1]->get_dmode() && !get_field(tdata1, CSR_TDATA1_DMODE(xlen)));
 
   // hardware should ignore writes that set dmode to 1 if the previous trigger has both dmode of 0 and chain of 1
   if (index > 0 && !triggers[index-1]->get_dmode() && triggers[index-1]->get_chain() && get_field(tdata1, CSR_TDATA1_DMODE(xlen)))
@@ -581,7 +581,9 @@ bool module_t::tdata1_write(unsigned index, const reg_t val) noexcept
   }
 
   triggers[index]->tdata1_write(proc, tdata1, allow_chain);
-  triggers[index]->tdata2_write(proc, tdata2);
+  // A tdata1 write must not modify tdata2, even if tdata2 is not legal for the
+  // new tdata1, so restore it without the type-specific legalization.
+  triggers[index]->trigger_t::tdata2_write(proc, tdata2);
   triggers[index]->tdata3_write(proc, tdata3);
   proc->trigger_updated(triggers);
   return true;
@@ -626,27 +628,57 @@ std::optional<match_result_t> module_t::detect_memory_access_match(
     return std::nullopt;
 
   bool chain_ok = true;
+  std::size_t chain_start = 0; // index of the first trigger of the current chain
+  std::optional<timing_t> chain_timing; // timing of the mcontrol triggers of the current chain
 
   std::optional<match_result_t> ret = std::nullopt;
-  for (auto trigger: triggers) {
+  for (std::size_t i = 0; i < triggers.size(); i++) {
+    auto trigger = triggers[i];
     if (!chain_ok) {
       chain_ok = !trigger->get_chain();
+      chain_start = i + 1;
+      chain_timing.reset();
       continue;
     }
 
-    /* Note: We call detect_memory_access_match for each trigger in a chain as long as
-     * the triggers are matching. This results in "temperature coding" so that
-     * `hit` is set on each of the consecutive triggers that matched, even if the
-     * entire chain did not match. This is allowed by the spec, because the final
-     * trigger in the chain will never get `hit` set unless the entire chain
-     * matches. */
     auto result = trigger->detect_memory_access_match(proc, operation, address, len, data);
-    if (result.has_value() && !trigger->get_chain() && (!ret.has_value() || ret->action < result->action))
-      ret = result;
+
+    // A chain of mcontrol triggers that don't all have the same timing never
+    // fires.  (mcontrol6 has no timing field.)
+    if (result.has_value() && dynamic_cast<mcontrol_t *>(trigger)) {
+      if (chain_timing.has_value() && *chain_timing != result->timing)
+        result = std::nullopt;
+      else
+        chain_timing = result->timing;
+    }
+
+    if (result.has_value() && !trigger->get_chain()) {
+      // The whole chain matched, so all of its triggers fire. The triggers
+      // of a chain that matched only partly don't fire and keep their hit.
+      // With timing after, they fire only once the instruction retires.
+      for (std::size_t j = chain_start; j <= i; j++) {
+        if (result->timing == TIMING_BEFORE)
+          triggers[j]->set_hit(HIT_BEFORE);
+        else
+          pending_hits.push_back(triggers[j]);
+      }
+      if (!ret.has_value() || ret->action < result->action)
+        ret = result;
+    }
 
     chain_ok = result.has_value() || !trigger->get_chain();
+    if (!trigger->get_chain()) {
+      chain_start = i + 1;
+      chain_timing.reset();
+    }
   }
   return ret;
+}
+
+void module_t::set_pending_hits() noexcept
+{
+  for (auto trigger: pending_hits)
+    trigger->set_hit(HIT_IMMEDIATELY_AFTER);
 }
 
 std::optional<match_result_t> module_t::detect_icount_match() noexcept
