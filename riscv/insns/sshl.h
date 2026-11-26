@@ -5,7 +5,7 @@ uint64_t shx;
 if (sshamt < 0) {
   shx = ((uint64_t)(uint32_t)RS1) >> std::min(-sshamt, 32);
 } else {
-  shx = (uint64_t)RS1 << std::min(sshamt, 32);
+  shx = (uint64_t)(uint32_t)RS1 << std::min(sshamt, 32);
   if (shx > UINT32_MAX) {
     P.set_vxsat();
     shx = UINT32_MAX;
