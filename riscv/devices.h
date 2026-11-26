@@ -180,6 +180,7 @@ class aplic_t : public abstract_device_t, public abstract_interrupt_controller_t
   uint32_t sourcecfg[APLIC_MAX_DEVICES];
   uint32_t mmsiaddrcfgh;
   uint32_t ie[APLIC_MAX_DEVICES / 32];
+  uint32_t ip[APLIC_MAX_DEVICES / 32];
   uint32_t target[APLIC_MAX_DEVICES];
   uint32_t level[APLIC_MAX_DEVICES / 32];
   uint32_t genmsi;
@@ -188,6 +189,8 @@ class aplic_t : public abstract_device_t, public abstract_interrupt_controller_t
 
   bool interrupt_enabled(uint32_t id) const;
   bool accessible(uint32_t id) const;
+  bool rectified_input(uint32_t id) const;
+  void set_pending(uint32_t id);
   void send_msi(uint32_t proc_id, uint32_t guest, uint32_t eiid);
   void send_msi(uint32_t id);
   void update_interrupt(uint32_t id);

@@ -20,6 +20,7 @@
 #define SETIENUM        0x1edc
 #define CLRIE_BASE      0x1f00
 #define CLRIENUM        0x1fdc
+#define SETIPNUM_LE     0x2000
 #define GENMSI          0x3000
 #define TARGET_BASE     0x3004
 #define IDC             0x4000
@@ -43,7 +44,7 @@
 
 #define APLIC_MMIO_REG_SIZE     4
 
-aplic_t::aplic_t(const simif_t *simif, aplic_t *parent) : simif(simif), parent(parent), child(nullptr), domaincfg((0x80 << 24) | DOMAINCFG_DM_MASK), sourcecfg(), mmsiaddrcfgh(MMSIADDRCFGH_L_MASK), ie(), target(), level(), genmsi(0), deleg_mask()
+aplic_t::aplic_t(const simif_t *simif, aplic_t *parent) : simif(simif), parent(parent), child(nullptr), domaincfg((0x80 << 24) | DOMAINCFG_DM_MASK), sourcecfg(), mmsiaddrcfgh(MMSIADDRCFGH_L_MASK), ie(), ip(), target(), level(), genmsi(0), deleg_mask()
 {
 }
 
@@ -56,6 +57,9 @@ void aplic_t::delegate(uint32_t id, bool dm)
     // child's sourcecfg = 0 when interrupt is changed to delegated
     if (!parent->delegated(id) && dm)
       sourcecfg[id] = 0;
+    // the source is inactive here after any change of delegation
+    if (parent->delegated(id) != dm)
+      ip[id / 32] &= ~(1u << (id % 32));
   } else {
     deleg_mask[id / 32] = set_field((uint32_t)deleg_mask[id / 32], 1 << (id % 32), dm);
     child->delegate(id, dm);
@@ -103,11 +107,41 @@ void aplic_t::set_interrupt_level(uint32_t id, int lvl)
     return;
   }
 
+  if (!id || id >= APLIC_MAX_DEVICES)
+    return;
+
+  // track the wire even while the source is not delegated to this domain
+  bool rising = lvl && !((level[id / 32] >> (id % 32)) & 1);
+  level[id / 32] = set_field((uint32_t)level[id / 32], 1 << (id % 32), lvl);
+
   if (!accessible(id))
     return;
 
-  level[id / 32] = set_field((uint32_t)level[id / 32], 1 << (id % 32), lvl);
+  // Level1 in MSI mode: a rising edge of the rectified input sets the
+  // pending bit, and a low rectified input clears it
+  if (!rectified_input(id))
+    ip[id / 32] &= ~(1u << (id % 32));
+  else if (rising)
+    ip[id / 32] |= 1u << (id % 32);
 
+  update_interrupt(id);
+}
+
+bool aplic_t::rectified_input(uint32_t id) const
+{
+  // Level1 is the only active source mode, so the rectified input is
+  // the wire level of an active source
+  if (!accessible(id) || (sourcecfg[id] & SOURCECFG_D_MASK) || !(sourcecfg[id] & SOURCECFG_SM_MASK))
+    return false;
+  return (level[id / 32] >> (id % 32)) & 1;
+}
+
+void aplic_t::set_pending(uint32_t id)
+{
+  // setip/setipnum set the pending bit only while the rectified input is high
+  if (!rectified_input(id))
+    return;
+  ip[id / 32] |= 1u << (id % 32);
   update_interrupt(id);
 }
 
@@ -139,12 +173,14 @@ void aplic_t::send_msi(uint32_t id)
 
 void aplic_t::update_interrupt(uint32_t id)
 {
-  // check level and if interrupt enabled, send MSI if necessary
+  // forward a pending and enabled interrupt by MSI, which clears the pending bit
   if (id >= APLIC_MAX_DEVICES)
     return;
-  bool lvl = (level[id / 32] >> (id % 32)) & 1;
-  if (lvl && interrupt_enabled(id))
+  uint32_t mask = 1u << (id % 32);
+  if ((ip[id / 32] & mask) && interrupt_enabled(id)) {
+    ip[id / 32] &= ~mask;
     send_msi(id);
+  }
 }
 
 void aplic_t::update_interrupt_masked(uint32_t idx, uint32_t mask)
@@ -176,9 +212,16 @@ bool aplic_t::load(reg_t addr, size_t len, uint8_t* bytes)
       val = sourcecfg[idx];
   } else if (addr == MMSIADDRCFGH) {
     val = mmsiaddrcfgh;
+  } else if (addr >= SETIP_BASE && addr < SETIPNUM) {
+    auto idx = (addr - SETIP_BASE) / APLIC_MMIO_REG_SIZE;
+    if (idx < APLIC_MAX_DEVICES / 32)
+      val = ip[idx];
   } else if (addr >= IN_CLRIP_BASE && addr < CLRIPNUM) {
     auto idx = (addr - IN_CLRIP_BASE) / APLIC_MMIO_REG_SIZE;
-    val = level[idx];
+    // level[] also tracks sources not delegated to this domain; hide them
+    for (uint32_t i = 0; i < 32; i++)
+      if (accessible(idx * 32 + i))
+        val |= level[idx] & (1u << i);
   } else if (addr >= SETIE_BASE && addr < SETIENUM) {
     auto idx = (addr - SETIE_BASE) / APLIC_MMIO_REG_SIZE;
     val = ie[idx];
@@ -209,6 +252,8 @@ bool aplic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   if (addr == DOMAINCFG) {
     domaincfg &= ~DOMAINCFG_IE_MASK;
     domaincfg |= val & DOMAINCFG_IE_MASK;
+    for (uint32_t idx = 0; idx < APLIC_MAX_DEVICES / 32; idx++)
+      update_interrupt_masked(idx, ip[idx]);
   } else if (addr >= SOURCECFG_BASE && addr < MMSIADDRCFG) {
     auto idx = (addr - SOURCECFG_BASE) / APLIC_MMIO_REG_SIZE + 1;
     // write to D bit sets child's sourcecfg to 0
@@ -224,20 +269,36 @@ bool aplic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
         val = set_field(val, SOURCECFG_SM_MASK, 6);
 
       sourcecfg[idx] = val;
+
+      // making a source inactive clears its pending bit
+      if ((val & SOURCECFG_D_MASK) || !(val & SOURCECFG_SM_MASK))
+        ip[idx / 32] &= ~(1u << (idx % 32));
     }
   } else if (addr >= SETIP_BASE && addr < SETIPNUM) {
     auto idx = (addr - SETIP_BASE) / APLIC_MMIO_REG_SIZE;
     val &= get_deleg_mask(idx);
-    update_interrupt_masked(idx, val);
-  } else if (addr == SETIPNUM) {
-    update_interrupt(val);
+    for (uint32_t i = 0; i < 32; i++)
+      if ((val >> i) & 1)
+        set_pending(idx * 32 + i);
+  } else if (addr == SETIPNUM || addr == SETIPNUM_LE) {
+    set_pending(val);
+  } else if (addr >= IN_CLRIP_BASE && addr < CLRIPNUM) {
+    auto idx = (addr - IN_CLRIP_BASE) / APLIC_MMIO_REG_SIZE;
+    if (idx < APLIC_MAX_DEVICES / 32)
+      ip[idx] &= ~val;
+  } else if (addr == CLRIPNUM) {
+    if (val < APLIC_MAX_DEVICES)
+      ip[val / 32] &= ~(1u << (val % 32));
   } else if (addr >= SETIE_BASE && addr < SETIENUM) {
     auto idx = (addr - SETIE_BASE) / APLIC_MMIO_REG_SIZE;
     val &= get_deleg_mask(idx);
     ie[idx] |= val;
+    update_interrupt_masked(idx, val);
   } else if (addr == SETIENUM) {
-    if (accessible(val))
+    if (accessible(val)) {
       ie[val / 32] |= 1 << (val % 32);
+      update_interrupt(val);
+    }
   } else if (addr >= CLRIE_BASE && addr < CLRIENUM) {
     auto idx = (addr - CLRIE_BASE) / APLIC_MMIO_REG_SIZE;
     val &= get_deleg_mask(idx);
