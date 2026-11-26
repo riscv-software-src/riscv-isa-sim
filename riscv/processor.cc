@@ -290,6 +290,13 @@ reg_t processor_t::select_an_interrupt_with_default_priority(reg_t enabled_inter
     enabled_interrupts = MIP_VSTIP;
   else if (enabled_interrupts & MIP_LCOFIP)
     enabled_interrupts = MIP_LCOFIP;
+  // codes 0, 4 and 8 have no standard default priority, but hvictl can inject them
+  else if (enabled_interrupts & MIP_UEIP)
+    enabled_interrupts = MIP_UEIP;
+  else if (enabled_interrupts & MIP_USIP)
+    enabled_interrupts = MIP_USIP;
+  else if (enabled_interrupts & MIP_UTIP)
+    enabled_interrupts = MIP_UTIP;
   else assert(0);
   return enabled_interrupts;
 }
