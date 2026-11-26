@@ -299,6 +299,7 @@ class rv32_low_csr_t: public csr_t {
  public:
   rv32_low_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig);
   reg_t read() const noexcept override;
+  reg_t read_for_write() const noexcept override;
   void verify_permissions(insn_t insn, bool write) const override;
  protected:
   bool unlogged_write(const reg_t val) noexcept override;
