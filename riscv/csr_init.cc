@@ -188,7 +188,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   mideleg = std::make_shared<mideleg_csr_t>(proc, CSR_MIDELEG);
   if (xlen == 32 && proc->extension_enabled_const(EXT_SMAIA)) {
     add_supervisor_csr(CSR_MIDELEG, std::make_shared<rv32_low_csr_t>(proc, CSR_MIDELEG, mideleg));
-    add_supervisor_csr(CSR_MIDELEGH, std::make_shared<aia_rv32_high_csr_t>(proc, CSR_MIDELEGH, mideleg));
+    add_supervisor_csr(CSR_MIDELEGH, std::make_shared<rv32_high_csr_t>(proc, CSR_MIDELEGH, mideleg));
   } else {
     add_supervisor_csr(CSR_MIDELEG, mideleg);
   }
