@@ -625,6 +625,19 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     add_csr(CSR_MPMPDELEG, mpmpdeleg = std::make_shared<mpmpdeleg_csr_t>(proc, CSR_MPMPDELEG, MPMPDELEG_PMPNUM, proc->n_pmp));
   }
 
+  // RISC-V Worlds (World-ID) CSRs.  Note that mwiddeleg must be created
+  // before mlwidlist, since the latter refers to it.
+  if (proc->extension_enabled_const(EXT_SMWID))
+    add_csr(CSR_MWID, mwid = std::make_shared<mwid_csr_t>(proc, CSR_MWID));
+  if (proc->extension_enabled_const(EXT_SMLWID))
+    add_csr(CSR_MLWID, mlwid = std::make_shared<lower_wid_csr_t>(proc, CSR_MLWID));
+  if (proc->extension_enabled_const(EXT_SMWIDDELEG)) {
+    add_csr(CSR_MWIDDELEG, mwiddeleg = std::make_shared<mwiddeleg_csr_t>(proc, CSR_MWIDDELEG));
+    add_supervisor_csr(CSR_SLWID, slwid = std::make_shared<slwid_csr_t>(proc, CSR_SLWID));
+  }
+  if (proc->extension_enabled_const(EXT_SMLWIDLIST))
+    add_csr(CSR_MLWIDLIST, mlwidlist = std::make_shared<mlwidlist_csr_t>(proc, CSR_MLWIDLIST));
+
   if (proc->extension_enabled_const(EXT_SSPMP)) {
     const reg_t spmp_cfg_mask = (SPMP_SHARED | SPMP_U | PMP_L | PMP_A | PMP_X | PMP_W | PMP_R);
     for (size_t i = 0; i < max_pmp; ++i) {

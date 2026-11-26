@@ -1132,4 +1132,54 @@ class vstopei_csr_t: public topei_csr_t {
   vstopei_csr_t(processor_t* const proc, const reg_t addr) : topei_csr_t(proc, addr, nullptr) {}
   void verify_permissions(insn_t insn, bool write) const override;
 };
+
+// RISC-V Worlds (World-ID) CSRs.
+
+// mwid (Smwid): WID of M-mode plus a sticky lock bit at MXLEN-1.  Once
+// locked, writes are ignored and mlwidlist (Smlwidlist) becomes read-only.
+class mwid_csr_t: public basic_csr_t {
+ public:
+  mwid_csr_t(processor_t* const proc, const reg_t addr);
+  bool is_locked() const noexcept;
+  reg_t get_wid() const noexcept;
+ protected:
+  bool unlogged_write(const reg_t val) noexcept override;
+};
+typedef std::shared_ptr<mwid_csr_t> mwid_csr_t_p;
+
+// mlwid (Smlwid) and slwid (Sswid): a WID field in the low
+// ceil(log2(NWorlds)) bits; other bits are read-only zero.
+class lower_wid_csr_t: public masked_csr_t {
+ public:
+  lower_wid_csr_t(processor_t* const proc, const reg_t addr);
+ protected:
+  bool unlogged_write(const reg_t val) noexcept override;
+};
+
+// slwid is only accessible when Sswid is enabled, i.e. mwiddeleg != 0,
+// and is not available to a guest (V=1).
+class slwid_csr_t: public lower_wid_csr_t {
+ public:
+  slwid_csr_t(processor_t* const proc, const reg_t addr);
+  void verify_permissions(insn_t insn, bool write) const override;
+};
+
+// mlwidlist (Smlwidlist): WARL subset of the platform's pmlwidlist.
+// Read-only whenever mwid is locked.  De-authorizing a WID also
+// de-authorizes it in mwiddeleg.
+class mlwidlist_csr_t: public masked_csr_t {
+ public:
+  mlwidlist_csr_t(processor_t* const proc, const reg_t addr);
+ protected:
+  bool unlogged_write(const reg_t val) noexcept override;
+};
+
+// mwiddeleg (Smwiddeleg): WARL subset of the delegatable WIDs, of
+// pmlwidlist and of mlwidlist (if implemented).
+class mwiddeleg_csr_t: public masked_csr_t {
+ public:
+  mwiddeleg_csr_t(processor_t* const proc, const reg_t addr);
+ protected:
+  bool unlogged_write(const reg_t val) noexcept override;
+};
 #endif

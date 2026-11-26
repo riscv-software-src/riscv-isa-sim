@@ -97,6 +97,14 @@ reg_t mmu_t::translate(mem_access_info_t access_info, reg_t len)
   bool virt = access_info.effective_virt;
   reg_t mode = (reg_t) access_info.effective_priv;
 
+  // RISC-V Worlds: every access (including the implicit page-table
+  // accesses below) is tagged with the WID of the effective privilege
+  // mode; an unauthorized WID raises a software-check exception, which has
+  // priority over any access fault.  This check is only reached on a TLB
+  // miss; the TLB is flushed whenever the WID of any privilege mode could
+  // change (Worlds CSR writes, privilege changes and mstatus.MPRV/MPP writes).
+  proc->check_wid_authorized(mode, virt);
+
   reg_t paddr = walk(access_info) | (addr & (PGSIZE-1));
 
   reg_t satp = proc->get_state()->satp->readvirt(virt);

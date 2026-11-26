@@ -68,6 +68,19 @@ processor_t::processor_t(const char* isa_str, const char* priv_str,
   set_pmp_granularity(cfg->pmpgranularity);
   set_pmp_num(cfg->pmpregions);
 
+  if (cfg->nworlds < 1 || cfg->nworlds > isa.get_max_xlen()) {
+    fprintf(stderr, "error: nworlds must be in the range [1, XLEN]\n");
+    abort();
+  }
+  if (cfg->pmwid >= cfg->nworlds) {
+    fprintf(stderr, "error: pmwid must be less than nworlds\n");
+    abort();
+  }
+  if (!((pmwidlist() >> cfg->pmwid) & 1)) {
+    fprintf(stderr, "error: pmwid must be included in pmwidlist\n");
+    abort();
+  }
+
   set_max_vaddr_bits(0);
   set_impl(IMPL_MMU_ASID, true);
   set_impl(IMPL_MMU_VMID, true);
@@ -195,6 +208,70 @@ extension_t* processor_t::get_extension(const char* name)
   if (it == custom_extensions.end())
     abort();
   return it->second;
+}
+
+reg_t processor_t::wid_field_mask() const
+{
+  // ceil(log2(nworlds)) bits
+  reg_t width = 0;
+  while ((reg_t(1) << width) < cfg->nworlds)
+    width++;
+  return (reg_t(1) << width) - 1;
+}
+
+reg_t processor_t::get_wid(reg_t priv, bool virt) const
+{
+  if (priv == PRV_M) {
+    // "Without any Worlds ISA extensions enabled, a Worlds-capable
+    // implementation will fix the WID to a platform-defined value" (pmwid).
+    return extension_enabled(EXT_SMWID) ? state.mwid->get_wid() : (cfg->pmwid & wid_field_mask());
+  }
+
+  // slwid applies to privilege modes lower than S (including, in this
+  // implementation, VS and VU) when Sswid is enabled, i.e. mwiddeleg != 0.
+  if ((priv < PRV_S || virt) && extension_enabled(EXT_SMWIDDELEG) && state.mwiddeleg->read() != 0)
+    return state.slwid->read();
+
+  if (extension_enabled(EXT_SMLWID))
+    return state.mlwid->read();
+
+  // Without Smlwid, lower privilege modes share M-mode's WID.
+  return get_wid(PRV_M, false);
+}
+
+bool processor_t::wid_authorized(reg_t priv, bool virt) const
+{
+  const reg_t wid = get_wid(priv, virt);
+  if (wid >= cfg->nworlds)
+    return false;
+
+  if (priv == PRV_M)
+    return (pmwidlist() >> wid) & 1;
+
+  if ((priv < PRV_S || virt) && extension_enabled(EXT_SMWIDDELEG) && state.mwiddeleg->read() != 0)
+    return (state.mwiddeleg->read() >> wid) & 1;
+
+  if (extension_enabled(EXT_SMLWID)) {
+    reg_t list = pmlwidlist();
+    if (extension_enabled(EXT_SMLWIDLIST))
+      list &= state.mlwidlist->read();
+    return (list >> wid) & 1;
+  }
+
+  return wid_authorized(PRV_M, false);
+}
+
+void processor_t::check_wid_authorized(reg_t priv, bool virt) const
+{
+  // Only harts with a Worlds extension can have an unauthorized WID.
+  if (!extension_enabled(EXT_SMWID) && !extension_enabled(EXT_SMLWID))
+    return;
+
+  // "When this exception is raised, the mtval register is set to
+  // "illegal world fault (code=4)". The software-check exception caused
+  // by Smlwid has higher priority than any access-fault exception"
+  if (!wid_authorized(priv, virt))
+    throw trap_software_check(ILLEGAL_WORLD_FAULT);
 }
 
 void processor_t::set_pmp_num(reg_t n)

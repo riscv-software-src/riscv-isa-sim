@@ -75,6 +75,12 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --wfi-as-nop          Do not wait on WFI; retain privilege checks\n");
   fprintf(stderr, "  --no-dm               Don't attach the debug module to the internal bus\n");
   fprintf(stderr, "  --triggers=<n>        Number of supported triggers [default 4]\n");
+  fprintf(stderr, "  --nworlds=<n>         RISC-V Worlds: number of WIDs (NWorlds) [default 4]\n");
+  fprintf(stderr, "  --pmwid=<wid>         RISC-V Worlds: WID of M-mode (mwid reset value) [default 0]\n");
+  fprintf(stderr, "  --pmwidlist=<mask>    RISC-V Worlds: WIDs that may be written to mwid [default all]\n");
+  fprintf(stderr, "  --pmlwidlist=<mask>   RISC-V Worlds: WIDs that may be written to mlwid [default all]\n");
+  fprintf(stderr, "  --pmwiddeleg=<mask>   RISC-V Worlds: WIDs delegatable to S-mode via mwiddeleg [default all]\n");
+  fprintf(stderr, "  --pmwid-locked        RISC-V Worlds: mwid is locked out of reset\n");
   fprintf(stderr, "  --mcontrol6-napot-maskmax=<n>\n");
   fprintf(stderr, "                        Max programmable NAPOT bits in mcontrol6 tdata2 [default XLEN-1]\n");
   fprintf(stderr, "  --dm-progsize=<words> Progsize for the debug module [default 2]\n");
@@ -282,6 +288,16 @@ static unsigned long atoul_safe(const char* s)
   return res;
 }
 
+// Like atoul_safe(), but also accepts hexadecimal (0x...) and octal values.
+static unsigned long long strtoull_safe(const char* s)
+{
+  char* e;
+  auto res = strtoull(s, &e, 0);
+  if (*e)
+    help();
+  return res;
+}
+
 static unsigned long atoul_nonzero_safe(const char* s)
 {
   auto res = atoul_safe(s);
@@ -434,6 +450,12 @@ int main(int argc, char** argv)
   parser.option(0, "real-time-clint", 0, [&](const char UNUSED *s){cfg.real_time_clint = true;});
   parser.option(0, "wfi-as-nop", 0, [&](const char UNUSED *s){cfg.wfi_as_nop = true;});
   parser.option(0, "triggers", 1, [&](const char *s){cfg.trigger_count = atoul_safe(s);});
+  parser.option(0, "nworlds", 1, [&](const char *s){cfg.nworlds = atoul_nonzero_safe(s);});
+  parser.option(0, "pmwid", 1, [&](const char *s){cfg.pmwid = atoul_safe(s);});
+  parser.option(0, "pmwidlist", 1, [&](const char *s){cfg.pmwidlist = strtoull_safe(s);});
+  parser.option(0, "pmlwidlist", 1, [&](const char *s){cfg.pmlwidlist = strtoull_safe(s);});
+  parser.option(0, "pmwiddeleg", 1, [&](const char *s){cfg.pmwiddeleg = strtoull_safe(s);});
+  parser.option(0, "pmwid-locked", 0, [&](const char UNUSED *s){cfg.pmwid_locked = true;});
   parser.option(0, "mcontrol6-napot-maskmax", 1, [&](const char *s){cfg.mcontrol6_napot_maskmax = atoul_nonzero_safe(s);});
   parser.option(0, "extlib", 1, [&](const char *s){
     void *lib = dlopen(s, RTLD_NOW | RTLD_GLOBAL);
