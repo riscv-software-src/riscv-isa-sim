@@ -1249,8 +1249,10 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
               } else {
                 hart->halt_request = hart->HR_NONE;
               }
-              if (dmcontrol.resumereq && hart_available(hart_id)) {
-                if (hart_state[hart_id].halted) {
+              if (dmcontrol.resumereq) {
+                // resumereq clears resume ack for every selected hart, but
+                // resumes only available, halted harts.
+                if (hart_available(hart_id) && hart_state[hart_id].halted) {
                   D(fprintf(stderr, "resume hart %d\n", hart_id));
                   debug_rom_flags[hart_id] |= (1 << DEBUG_ROM_FLAG_RESUME);
                 }
