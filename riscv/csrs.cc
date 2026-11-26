@@ -2452,25 +2452,33 @@ reg_t vstopi_csr_t::read() const noexcept {
 
   reg_t enabled_interrupts = state->mip->read() & state->mie->read() & state->hideleg->read();
   enabled_interrupts >>= 1; // VSSIP -> SSIP, etc
-  reg_t vgein = get_field(state->hstatus->read(), HSTATUS_VGEIN);
-  reg_t virtual_sei_priority = (vgein == 0 && iid == IRQ_S_EXT && iprio != 0) ? iprio : 255; // vstopi.IPRIO is 255 for priority number 256
+  bool sei = enabled_interrupts & MIP_SEIP;
 
-  reg_t identity, priority;
+  // AIA 6.3.3: priority number of the VS external interrupt candidate
+  reg_t vgein = get_field(state->hstatus->read(), HSTATUS_VGEIN);
+  reg_t vstopei = (vgein && proc->imsic->vgein_valid(vgein)) ? proc->imsic->vs[vgein]->topei() : 0;
+  reg_t sei_priority = vstopei ? vstopei : (vgein == 0 && iid == IRQ_S_EXT && iprio != 0) ? iprio : 256;
+
+  reg_t identity, priority; // priority number; 256 = lowest, clamped to 255 on output
   if (vti) {
-    if (!(enabled_interrupts & MIP_SEIP) && iid == IRQ_S_EXT)
+    if (!sei && iid == IRQ_S_EXT)
       return 0;
 
-    identity = ((enabled_interrupts & MIP_SEIP) && (iid == IRQ_S_EXT || dpr)) ? IRQ_S_EXT : iid;
-    priority = (identity == IRQ_S_EXT) ? virtual_sei_priority : ((iprio != 0 || !dpr) ? iprio : 255);
+    // The hvictl candidate (iid != 9) has number iprio; with iprio == 0, DPR picks the default
+    // order: above VSEI (DPR=0) or below it (DPR=1). Ties in number go to the default order.
+    bool hvictl_wins = iid != IRQ_S_EXT &&
+      (!sei || (iprio ? (iprio < sei_priority || (iprio == sei_priority && !dpr)) : !dpr));
+    identity = hvictl_wins ? iid : IRQ_S_EXT;
+    priority = !hvictl_wins ? sei_priority : (iprio == 0 && dpr) ? 256 : iprio;
   } else {
     if (!enabled_interrupts)
       return 0; // no enabled pending interrupt to VS-mode
 
     reg_t selected_interrupt = proc->select_an_interrupt_with_default_priority(enabled_interrupts);
     identity = ctz(selected_interrupt);
-    priority = (identity == IRQ_S_EXT) ? virtual_sei_priority : 255; // vstopi.IPRIO is 255 for interrupt with default priority lower than VSEI
+    priority = (identity == IRQ_S_EXT) ? sei_priority : 256; // others have default order below VSEI
   }
-  return set_field((reg_t)(ipriom ? priority : 1), MTOPI_IID, identity);
+  return set_field((reg_t)(ipriom ? std::min<reg_t>(priority, 255) : 1), MTOPI_IID, identity);
 }
 
 bool vstopi_csr_t::unlogged_write(const reg_t UNUSED val) noexcept {
