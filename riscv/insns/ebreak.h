@@ -1,5 +1,5 @@
 bool do_semihosting = false;
-if (!STATE.debug_mode) {
+if (p->get_cfg().semihosting && !STATE.debug_mode) {
   // RISC-V semihosting sequence
   //      slli x0, x0, 0x1f    # 0x01f01013 Entry NOP
   //      ebreak               # 0x00100073 Break to debugger

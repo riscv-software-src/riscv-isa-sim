@@ -92,6 +92,7 @@ public:
   bool                    explicit_hartids;
   bool                    real_time_clint;
   bool                    wfi_as_nop;
+  bool                    semihosting;
   reg_t                   trigger_count;
   reg_t                   mcontrol6_napot_maskmax;
   reg_t                   cache_blocksz;
