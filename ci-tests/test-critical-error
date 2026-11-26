@@ -1,0 +1,38 @@
+#!/bin/bash
+# See LICENSE for license details.
+set -eu
+
+SPIKE=$1
+RUN=$2
+CI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+command -v riscv64-linux-gnu-gcc > /dev/null && HOST=riscv64-linux-gnu || HOST=riscv64-unknown-elf
+mkdir -p "$RUN"
+
+for xlen in 32 64; do
+  abi=lp64
+  test "$xlen" -eq 32 && abi=ilp32
+  elf="$RUN/critical-error-rv$xlen"
+  "$HOST-gcc" -nostdlib -nostartfiles -static -no-pie -fno-pie \
+    -march=rv${xlen}i -mabi="$abi" -Wl,--build-id=none \
+    -Wl,-Ttext-segment=0x80000000 -Wl,--section-start=.tohost=0x81000000 \
+    -o "$elf" "$CI/critical-error.S"
+  for dm in enabled disabled; do
+    options=()
+    test "$dm" = disabled && options+=(--no-dm)
+    for budget in unlimited 1 6000; do
+      limit=()
+      test "$budget" = unlimited || limit+=(--instructions="$budget")
+      log="$RUN/rv$xlen-$dm-$budget.log"
+      status=0
+      timeout 10 "$SPIKE" --isa=rv${xlen}i_smdbltrp --disable-dtb -p2 \
+        "${options[@]}" "${limit[@]}" "$elf" > "$log" 2>&1 || status=$?
+      if test "$status" -ne 1 || ! grep -q '^hart 0: critical error$' "$log" ||
+          grep -q '^hart 1: critical error$' "$log"; then
+        echo "FAIL: RV$xlen DM=$dm budget=$budget status=$status" >&2
+        cat "$log" >&2
+        exit 1
+      fi
+    done
+  done
+done
+echo "Executed successfully"

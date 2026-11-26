@@ -369,6 +369,8 @@ void sim_t::step(size_t n)
   {
     steps = std::min(n - i, INTERLEAVE - current_step);
     procs[current_proc]->step(steps);
+    if (should_exit())
+      return;
 
     current_step += steps;
     if (current_step == INTERLEAVE)
@@ -540,7 +542,8 @@ void sim_t::idle()
       if (*instruction_limit < INTERLEAVE) {
         // Final step.
         step(*instruction_limit);
-        htif_exit(0);
+        if (!should_exit())
+          htif_exit(0);
         *instruction_limit = 0;
         return;
       }
@@ -576,6 +579,12 @@ void sim_t::write_chunk(addr_t taddr, size_t len, const void* src)
 endianness_t sim_t::get_target_endianness() const
 {
   return debug_mmu->is_target_big_endian()? endianness_big : endianness_little;
+}
+
+void sim_t::proc_critical_error(unsigned id)
+{
+  fprintf(stderr, "hart %u: critical error\n", id);
+  htif_exit(3); // HTIF encodes failure status 1 as (1 << 1) | 1.
 }
 
 void sim_t::proc_reset(unsigned id)

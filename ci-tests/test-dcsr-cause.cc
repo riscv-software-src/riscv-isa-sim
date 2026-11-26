@@ -40,24 +40,25 @@ static bool test_double_trap_step(processor_t *proc, reg_t pc, bool cetrig) {
   step_illegal(proc, pc, true, cetrig);
   auto *state = proc->get_state();
 
-  bool ok = check(state->debug_mode, "debug mode");
+  bool ok = check(state->debug_mode == cetrig, "debug mode follows cetrig");
   ok &= check(state->critical_error, "critical error");
   ok &= check_eq(get_field(state->dcsr->read(), DCSR_CAUSE),
-                 cetrig ? DCSR_CAUSE_EXTCAUSE : DCSR_CAUSE_HALT, "dcsr.cause");
+                 cetrig ? DCSR_CAUSE_EXTCAUSE : 0, "dcsr.cause");
   ok &= check_eq(get_field(state->dcsr->read(), DCSR_EXTCAUSE),
                  DCSR_EXTCAUSE_CRITERR, "dcsr.extcause");
-  ok &= check_eq(state->dpc->read(), pc, "dpc");
-  ok &= check_eq(state->pc, DEBUG_ROM_ENTRY, "pc");
+  ok &= check_eq(state->dpc->read(), cetrig ? pc : 0, "dpc");
+  ok &= check_eq(state->pc, cetrig ? DEBUG_ROM_ENTRY : pc, "pc");
   ok &= check_eq(state->single_step, state->STEP_NONE, "single_step");
   return ok;
 }
 
 static bool test_debug_trap(processor_t *proc, reg_t pc, bool cetrig) {
   printf("trap in debug mode after critical error\n");
-  step_illegal(proc, pc, true, cetrig);
+  step_illegal(proc, pc, true, true);
   auto *state = proc->get_state();
   if (!check(state->debug_mode && state->critical_error, "critical error debug entry"))
     return false;
+  state->dcsr->write(set_field(state->dcsr->read(), DCSR_CETRIG, cetrig));
 
   auto dcsr = state->dcsr->read();
   auto dpc = state->dpc->read();
