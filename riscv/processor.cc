@@ -339,7 +339,12 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
   // dcsr.stepie is hard-wired to 0: no interrupts while single stepping
   if (!state.debug_mode && !state.dcsr->step && nmie && enabled_interrupts) {
     reg_t selected_interrupt = select_an_interrupt_with_default_priority(enabled_interrupts);
-    if (check_triggers_icount) TM.detect_icount_match();
+    if (check_triggers_icount) {
+      // A pending icount trigger fires before the interrupt is taken
+      auto match = TM.detect_icount_match();
+      if (match.has_value())
+        throw triggers::matched_t((triggers::operation_t)0, 0, match->action, false);
+    }
     throw trap_t(((reg_t)1 << (isa.get_max_xlen() - 1)) | ctz(selected_interrupt));
   }
 }
@@ -598,7 +603,8 @@ void processor_t::check_if_lpad_required()
 reg_t processor_t::set_lpad_expected(reg_t pc)
 {
   auto p = this;
-  if (ZICFILP_xLPE(state.v, state.prv))
+  // In Debug Mode, ELP stays NO_LP_EXPECTED
+  if (ZICFILP_xLPE(state.v, state.prv) && !state.debug_mode)
     state.elp = elp_t::LP_EXPECTED;
   return pc;
 }
