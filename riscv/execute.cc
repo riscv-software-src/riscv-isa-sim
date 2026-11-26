@@ -285,15 +285,8 @@ void processor_t::step(size_t n)
           advance_pc(new_pc);
 
           // Resume from debug mode in critical error
-          if (state.critical_error && !state.debug_mode) {
-            if (state.dcsr->read() & DCSR_CETRIG) {
-              enter_debug_mode(DCSR_CAUSE_EXTCAUSE, DCSR_EXTCAUSE_CRITERR);
-            } else {
-              // Handling of critical error is implementation defined
-              // For now just enter debug mode
-              enter_debug_mode(DCSR_CAUSE_HALT, 0);
-            }
-          }
+          if (state.critical_error && !state.debug_mode)
+            enter_critical_error_state();
         }
       }
       else while (instret < n)
@@ -321,15 +314,8 @@ void processor_t::step(size_t n)
       n = instret;
 
       // If critical error then enter debug mode critical error trigger enabled
-      if (state.critical_error && !state.debug_mode) {
-        if (state.dcsr->read() & DCSR_CETRIG) {
-          enter_debug_mode(DCSR_CAUSE_EXTCAUSE, DCSR_EXTCAUSE_CRITERR);
-        } else {
-          // Handling of critical error is implementation defined
-          // For now just enter debug mode
-          enter_debug_mode(DCSR_CAUSE_HALT, 0);
-        }
-      }
+      if (state.critical_error && !state.debug_mode)
+        enter_critical_error_state();
       // Trigger action takes priority over single step
       auto match = TM.detect_trap_match(t);
       if (match.has_value())
