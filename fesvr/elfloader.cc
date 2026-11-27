@@ -18,6 +18,13 @@
 #include <map>
 #include <cerrno>
 
+// Throw unless [offset, offset + len) lies within the file; written so the sum cannot wrap
+static void check_in_file(size_t size, uint64_t offset, uint64_t len, const char* what)
+{
+  if (offset > size || len > size - offset)
+    throw std::invalid_argument(std::string("Specified ELF has an invalid ") + what);
+}
+
 std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* entry,
                                          reg_t load_offset, unsigned required_xlen = 0)
 {
@@ -56,14 +63,20 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
 #define LOAD_ELF(ehdr_t, phdr_t, shdr_t, sym_t, bswap)                         \
   do {                                                                         \
     ehdr_t* eh = (ehdr_t*)buf;                                                 \
+    check_in_file(size, bswap(eh->e_phoff),                                    \
+                  bswap(eh->e_phnum) * sizeof(phdr_t),                         \
+                  "program header table");                                     \
     phdr_t* ph = (phdr_t*)(buf + bswap(eh->e_phoff));                          \
     *entry = bswap(eh->e_entry) + load_offset;                                 \
-    assert(size >= bswap(eh->e_phoff) + bswap(eh->e_phnum) * sizeof(*ph));     \
     for (unsigned i = 0; i < bswap(eh->e_phnum); i++) {                        \
       if (bswap(ph[i].p_type) == PT_LOAD && bswap(ph[i].p_memsz)) {            \
         reg_t load_addr = bswap(ph[i].p_paddr) + load_offset;                  \
+        if (bswap(ph[i].p_memsz) < bswap(ph[i].p_filesz))                      \
+          throw std::invalid_argument("Specified ELF has a segment whose "     \
+                                      "p_memsz is less than its p_filesz");    \
         if (bswap(ph[i].p_filesz)) {                                           \
-          assert(size >= bswap(ph[i].p_offset) + bswap(ph[i].p_filesz));       \
+          check_in_file(size, bswap(ph[i].p_offset), bswap(ph[i].p_filesz),    \
+                        "segment offset or size");                             \
           memif->write(load_addr, bswap(ph[i].p_filesz),                       \
                        (uint8_t*)buf + bswap(ph[i].p_offset));                 \
         }                                                                      \
@@ -73,11 +86,14 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
         }                                                                      \
       }                                                                        \
     }                                                                          \
+    check_in_file(size, bswap(eh->e_shoff),                                    \
+                  bswap(eh->e_shnum) * sizeof(shdr_t),                         \
+                  "section header table");                                     \
     shdr_t* sh = (shdr_t*)(buf + bswap(eh->e_shoff));                          \
-    assert(size >= bswap(eh->e_shoff) + bswap(eh->e_shnum) * sizeof(*sh));     \
     assert(bswap(eh->e_shstrndx) < bswap(eh->e_shnum));                        \
-    assert(size >= bswap(sh[bswap(eh->e_shstrndx)].sh_offset) +                \
-                       bswap(sh[bswap(eh->e_shstrndx)].sh_size));              \
+    check_in_file(size, bswap(sh[bswap(eh->e_shstrndx)].sh_offset),            \
+                  bswap(sh[bswap(eh->e_shstrndx)].sh_size),                    \
+                  "section name string table");                                \
     char* shstrtab = buf + bswap(sh[bswap(eh->e_shstrndx)].sh_offset);         \
     unsigned strtabidx = 0, symtabidx = 0;                                     \
     for (unsigned i = 0; i < bswap(eh->e_shnum); i++) {                        \
@@ -87,7 +103,8 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
       assert(bswap(sh[i].sh_name) < bswap(sh[bswap(eh->e_shstrndx)].sh_size)); \
       assert(strnlen(shstrtab + bswap(sh[i].sh_name), max_len) < max_len);     \
       if (bswap(sh[i].sh_type) & SHT_NOBITS) continue;                         \
-      assert(size >= bswap(sh[i].sh_offset) + bswap(sh[i].sh_size));           \
+      check_in_file(size, bswap(sh[i].sh_offset), bswap(sh[i].sh_size),        \
+                    "section offset or size");                                 \
       if (strcmp(shstrtab + bswap(sh[i].sh_name), ".strtab") == 0)             \
         strtabidx = i;                                                         \
       if (strcmp(shstrtab + bswap(sh[i].sh_name), ".symtab") == 0)             \
