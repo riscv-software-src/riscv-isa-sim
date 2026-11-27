@@ -1,6 +1,6 @@
 require_rv32;
 P_NARROW_RD_RS1_ULOOP(8, 16, {
-    uint32_t shamt = P_UFIELD(RS2, 0, 8) & 0xF;
+    uint32_t shamt = P_UFIELD(RS2, 0, 8) & 0x1F;
     uint32_t result;
     if (shamt == 0) {
         result = p_rs1;
