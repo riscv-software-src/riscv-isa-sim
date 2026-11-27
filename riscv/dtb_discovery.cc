@@ -51,7 +51,7 @@ namespace {
 
     int entry_cells = addr_cells + size_cells;
     int entry_size = entry_cells * sizeof(fdt32_t);
-    if ((len % entry_size) != 0) {
+    if (len < entry_size || (len % entry_size) != 0) {
       fprintf(stderr, "DTB node '%s' has malformed 'reg'\n", node_name);
       return false;
     }
