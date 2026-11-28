@@ -177,6 +177,7 @@ private:
   size_t chunk_align() override { return 8; }
   size_t chunk_max_size() override { return 8; }
   endianness_t get_target_endianness() const override;
+  bool should_report_missing_htif_symbols() const override { return !cfg->semihosting; }
 
 public:
   // Initialize this after procs, because in debug_module_t::reset() we
