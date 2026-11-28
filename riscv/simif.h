@@ -4,6 +4,8 @@
 #define _RISCV_SIMIF_H
 
 #include <map>
+#include <string>
+#include <vector>
 #include "decode.h"
 #include "cfg.h"
 
@@ -24,6 +26,8 @@ public:
   virtual bool is_debug_module_access(reg_t, size_t) { return false; }
   // Callback for processors to let the simulation know they were reset.
   virtual void proc_reset(unsigned id) = 0;
+  virtual void sim_exit(int code) = 0;
+  virtual const std::vector<std::string>& get_target_args() = 0;
 
   virtual const cfg_t &get_cfg() const = 0;
   virtual const std::map<size_t, processor_t*>& get_harts() const = 0;

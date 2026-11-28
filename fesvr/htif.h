@@ -68,6 +68,9 @@ class htif_t : public chunked_memif_t
   virtual void load_symbols(std::map<std::string, uint64_t>&);
   virtual void idle() {}
 
+  // Return true if a warning should be issued when tohost and fromhost symbols are missing
+  virtual bool should_report_missing_htif_symbols() const { return true; }
+
   const std::vector<std::string>& host_args() { return hargs; }
   const std::vector<std::string>& target_args() { return targs; }
 

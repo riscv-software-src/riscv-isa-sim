@@ -147,3 +147,9 @@ $HOST-gcc -nostdlib -nostartfiles -static -no-pie -fno-pie \
 bash "$CI/test-zvl-standalone" "$INSTALL/bin/spike" \
   "$INSTALL/bin/spike-dasm" "$RUN/zvl-standalone.elf" \
   "$RUN/zvl-standalone"
+
+# return to the original directory
+cd $HERE
+
+# commented out because it requires riscv64-unknown-elf
+# $CI/semihosting/run.sh $INSTALL/bin/spike

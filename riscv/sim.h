@@ -55,6 +55,10 @@ public:
   void configure_log(bool enable_log, bool enable_commitlog);
 
   void set_procs_debug(bool value);
+  void sim_exit(int code) override { htif_exit(code << 1 | 1); }
+  const std::vector<std::string>& get_target_args() override {
+    return target_args();
+  }
   void set_remote_bitbang(remote_bitbang_t* remote_bitbang) {
     this->remote_bitbang = remote_bitbang;
   }
@@ -173,6 +177,7 @@ private:
   size_t chunk_align() override { return 8; }
   size_t chunk_max_size() override { return 8; }
   endianness_t get_target_endianness() const override;
+  bool should_report_missing_htif_symbols() const override { return !cfg->semihosting; }
 
 public:
   // Initialize this after procs, because in debug_module_t::reset() we

@@ -434,6 +434,8 @@ public:
 
   unsigned geilen;
   imsic_t_p imsic;
+
+  reg_t semihosting(const int xlen, reg_t a0, reg_t a1);
 };
 
 #endif

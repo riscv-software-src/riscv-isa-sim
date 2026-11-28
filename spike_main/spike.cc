@@ -94,6 +94,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --dm-no-abstractauto  Debug module won't support the abstractauto register\n");
   fprintf(stderr, "  --blocksz=<size>      Cache block size (B) for CMO operations(powers of 2) [default 64]\n");
   fprintf(stderr, "  --instructions=<n>    Stop after n instructions\n");
+  fprintf(stderr, "  --semihosting         Enable semihosting support\n");
 
   exit(exit_code);
 }
@@ -392,6 +393,7 @@ int main(int argc, char** argv)
   parser.option(0, "halted", 0, [&](const char UNUSED *s){halted = true;});
   parser.option(0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoul_safe(s);});
   parser.option(0, "pc", 1, [&](const char* s){cfg.start_pc.set_global(strtoull(s, 0, 0));});
+  parser.option(0, "semihosting", 0, [&](const char UNUSED *s){cfg.semihosting = true;});
 
   parser.option(0, "pcs", 1, [&](const char* s){
     std::string arg(s);
